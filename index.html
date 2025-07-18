@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CASH TYCOON</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='20' width='24' height='4' fill='%2300ff00'/%3E%3Crect x='4' y='16' width='24' height='4' fill='%2300ff00'/%3E%3Crect x='4' y='12' width='24' height='4' fill='%2300ff00'/%3E%3Crect x='4' y='8' width='24' height='4' fill='%2300ff00'/%3E%3Ctext x='16' y='18' text-anchor='middle' fill='%23000000' font-family='monospace' font-size='6' font-weight='bold'%3E%24%3C/text%3E%3C/svg%3E">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier Prime', monospace;
+            background: #000;
+            color: #00ff00;
+            min-height: 100vh;
+            overflow-x: auto;
+            animation: flicker 0.1s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 1; }
+            100% { opacity: 0.98; }
+        }
+
+        .terminal {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .terminal::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(transparent 50%, rgba(0, 255, 0, 0.03) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border: 2px solid #00ff00;
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .ascii-cash {
+            font-size: 10px;
+            line-height: 1;
+            white-space: pre;
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .main-panel, .shop-panel {
+            border: 2px solid #00ff00;
+            padding: 20px;
+            background: rgba(0, 255, 0, 0.05);
+        }
+
+        .section-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            border-bottom: 1px solid #00ff00;
+            padding-bottom: 10px;
+        }
+
+        .money-display {
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 5px 0;
+            border-bottom: 1px dotted #00ff00;
+        }
+
+        .click-button {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            margin: 20px 0;
+            background: #000;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            font-family: 'Courier Prime', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        .click-button:hover {
+            background: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 20px #00ff00;
+            text-shadow: 0 0 15px #00ff00;
+        }
+
+        .click-button:active {
+            background: rgba(0, 255, 0, 0.2);
+            transform: scale(0.98);
+        }
+
+        .upgrade-item {
+            border: 1px solid #00ff00;
+            margin: 10px 0;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(0, 255, 0, 0.02);
+        }
+
+        .upgrade-item:hover {
+            background: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .upgrade-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            color: #666;
+        }
+
+        .upgrade-item.disabled:hover {
+            background: rgba(0, 255, 0, 0.02);
+            box-shadow: none;
+        }
+
+        .upgrade-name {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .upgrade-details {
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .upgrade-cost {
+            font-weight: bold;
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        .upgrade-owned {
+            font-size: 11px;
+            color: #66ff66;
+            text-align: right;
+        }
+
+        .floating-money {
+            position: fixed;
+            font-size: 16px;
+            font-weight: bold;
+            color: #00ff00;
+            pointer-events: none;
+            animation: floatUpTerminal 1s ease-out forwards;
+            text-shadow: 0 0 10px #00ff00;
+            z-index: 100;
+        }
+
+        @keyframes floatUpTerminal {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-60px);
+            }
+        }
+
+        .terminal-prompt {
+            color: #00ff00;
+            font-size: 12px;
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #00ff00;
+            background: rgba(0, 255, 0, 0.05);
+        }
+
+        .blinking-cursor {
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .ascii-divider {
+            text-align: center;
+            font-size: 12px;
+            margin: 20px 0;
+            color: #00ff00;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .title {
+                font-size: 18px;
+            }
+            
+            .ascii-cash {
+                font-size: 8px;
+            }
+            
+            .money-display {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <div class="header">
+            <div class="ascii-cash">
+ $$$\   $$$\   $$$\  $\   $\ 
+$  __$\ $  __$\ $  __$\ $ |  $ |
+$ /  \__|$ /  $ |$ /  \__|$ |  $ |
+$ |      $$$$ |\$$$\  $$$$ |
+$ |      $  __$ | \____$\ $  __$ |
+$ |  $\ $ |  $ |$\   $ |$ |  $ |
+\$$$  |$ |  $ |\$$$  |$ |  $ |
+ \______/ \__|  \__| \______/ \__|  \__|
+            </div>
+            <div class="title">CASH TYCOON TERMINAL v1.0</div>
+            <div>System initialized. Ready for operation.</div>
+        </div>
+
+        <div class="game-container">
+            <div class="main-panel">
+                <div class="section-header">[ MAIN TERMINAL ]</div>
+                <div class="money-display">$ <span id="money">0</span></div>
+                
+                <div class="stats-row">
+                    <span>Income/sec:</span>
+                    <span>$ <span id="moneyPerSecond">0</span></span>
+                </div>
+                <div class="stats-row">
+                    <span>Click value:</span>
+                    <span>$ <span id="clickValue">1</span></span>
+                </div>
+                
+                <button class="click-button" id="moneyButton">
+                    [ CLICK TO GENERATE MONEY ]
+                </button>
+                
+                <div class="ascii-divider">
+                    ================================
+                </div>
+                
+                <div class="section-header">[ SYSTEM STATS ]</div>
+                <div class="stats-row">
+                    <span>Total clicks:</span>
+                    <span id="totalClicks">0</span>
+                </div>
+                <div class="stats-row">
+                    <span>Total earned:</span>
+                    <span>$ <span id="totalEarned">0</span></span>
+                </div>
+                <div class="stats-row">
+                    <span>CPU cycles:</span>
+                    <span id="handCramps">0</span>
+                </div>
+                <div class="stats-row">
+                    <span>System uptime:</span>
+                    <span id="uptime">00:00:00</span>
+                </div>
+            </div>
+
+            <div class="shop-panel">
+                <div class="section-header">[ UPGRADE STORE ]</div>
+                <div id="upgradesList"></div>
+            </div>
+        </div>
+        
+        <div class="terminal-prompt">
+            > system@money-clicker:~$ run money_generator.exe<span class="blinking-cursor">_</span>
+        </div>
+    </div>
+
+    <script>
+        class TerminalMoneyClicker {
+            constructor() {
+                this.money = 0;
+                this.moneyPerSecond = 0;
+                this.clickValue = 1;
+                this.totalClicks = 0;
+                this.totalEarned = 0;
+                this.handCramps = 0;
+                this.startTime = Date.now();
+                
+                this.upgrades = {
+                    cursor: {
+                        name: "[AUTO-CLICKER.EXE]",
+                        description: "Automated clicking subroutine",
+                        cost: 15,
+                        owned: 0,
+                        mps: 0.1,
+                        costMultiplier: 1.15
+                    },
+                    grandma: {
+                        name: "[MONEY_PRINTER.DLL]",
+                        description: "Legacy money generation module",
+                        cost: 100,
+                        owned: 0,
+                        mps: 1,
+                        costMultiplier: 1.15
+                    },
+                    farm: {
+                        name: "[VENDING_MACHINE.SYS]",
+                        description: "Passive income system driver",
+                        cost: 1100,
+                        owned: 0,
+                        mps: 8,
+                        costMultiplier: 1.15
+                    },
+                    mine: {
+                        name: "[ATM_NETWORK.BIN]",
+                        description: "Distributed cash dispensing protocol",
+                        cost: 12000,
+                        owned: 0,
+                        mps: 47,
+                        costMultiplier: 1.15
+                    },
+                    factory: {
+                        name: "[MONEY_FACTORY.APP]",
+                        description: "Industrial currency production unit",
+                        cost: 130000,
+                        owned: 0,
+                        mps: 260,
+                        costMultiplier: 1.15
+                    },
+                    bank: {
+                        name: "[INVESTMENT_BANK.COM]",
+                        description: "Financial multiplication algorithm",
+                        cost: 1400000,
+                        owned: 0,
+                        mps: 1400,
+                        costMultiplier: 1.15
+                    },
+                    clickUpgrade: {
+                        name: "[CLICK_AMPLIFIER.BAT]",
+                        description: "Double click processing power",
+                        cost: 100,
+                        owned: 0,
+                        mps: 0,
+                        costMultiplier: 10
+                    }
+                };
+
+                this.initializeElements();
+                this.updateDisplay();
+                this.renderUpgrades();
+                this.startGameLoop();
+            }
+
+            initializeElements() {
+                this.moneyElement = document.getElementById('money');
+                this.moneyPerSecondElement = document.getElementById('moneyPerSecond');
+                this.clickValueElement = document.getElementById('clickValue');
+                this.totalClicksElement = document.getElementById('totalClicks');
+                this.totalEarnedElement = document.getElementById('totalEarned');
+                this.handCrampsElement = document.getElementById('handCramps');
+                this.uptimeElement = document.getElementById('uptime');
+                this.moneyButton = document.getElementById('moneyButton');
+                this.upgradesListElement = document.getElementById('upgradesList');
+
+                this.moneyButton.addEventListener('click', (e) => this.clickMoney(e));
+            }
+
+            clickMoney(event) {
+                this.money += this.clickValue;
+                this.totalClicks++;
+                this.totalEarned += this.clickValue;
+                
+                // CPU cycles every 50 clicks
+                if (this.totalClicks % 50 === 0) {
+                    this.handCramps++;
+                }
+
+                this.createFloatingMoney(event);
+                this.updateDisplay();
+            }
+
+            createFloatingMoney(event) {
+                const floatingMoney = document.createElement('div');
+                floatingMoney.className = 'floating-money';
+                floatingMoney.textContent = `+$${this.clickValue}`;
+                floatingMoney.style.left = event.clientX + 'px';
+                floatingMoney.style.top = event.clientY + 'px';
+                document.body.appendChild(floatingMoney);
+
+                setTimeout(() => {
+                    if (document.body.contains(floatingMoney)) {
+                        document.body.removeChild(floatingMoney);
+                    }
+                }, 1000);
+            }
+
+            buyUpgrade(upgradeKey) {
+                const upgrade = this.upgrades[upgradeKey];
+                if (this.money >= upgrade.cost) {
+                    this.money -= upgrade.cost;
+                    upgrade.owned++;
+                    
+                    if (upgradeKey === 'clickUpgrade') {
+                        this.clickValue *= 2;
+                    } else {
+                        this.moneyPerSecond += upgrade.mps;
+                    }
+                    
+                    upgrade.cost = Math.floor(upgrade.cost * upgrade.costMultiplier);
+                    
+                    this.updateDisplay();
+                    this.renderUpgrades();
+                }
+            }
+
+            updateDisplay() {
+                this.moneyElement.textContent = Math.floor(this.money).toLocaleString();
+                this.moneyPerSecondElement.textContent = this.moneyPerSecond.toFixed(1);
+                this.clickValueElement.textContent = this.clickValue.toLocaleString();
+                this.totalClicksElement.textContent = this.totalClicks.toLocaleString();
+                this.totalEarnedElement.textContent = Math.floor(this.totalEarned).toLocaleString();
+                this.handCrampsElement.textContent = this.handCramps.toLocaleString();
+                
+                // Update uptime
+                const elapsed = Date.now() - this.startTime;
+                const hours = Math.floor(elapsed / 3600000);
+                const minutes = Math.floor((elapsed % 3600000) / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
+                this.uptimeElement.textContent = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            renderUpgrades() {
+                this.upgradesListElement.innerHTML = '';
+                
+                for (const [key, upgrade] of Object.entries(this.upgrades)) {
+                    const upgradeElement = document.createElement('div');
+                    upgradeElement.className = 'upgrade-item';
+                    
+                    if (this.money < upgrade.cost) {
+                        upgradeElement.classList.add('disabled');
+                    }
+                    
+                    upgradeElement.innerHTML = `
+                        <div class="upgrade-name">${upgrade.name}</div>
+                        <div class="upgrade-details">${upgrade.description}</div>
+                        <div class="upgrade-cost">Cost: $${upgrade.cost.toLocaleString()}</div>
+                        <div class="upgrade-owned">Instances: ${upgrade.owned}</div>
+                    `;
+                    
+                    if (this.money >= upgrade.cost) {
+                        upgradeElement.addEventListener('click', () => this.buyUpgrade(key));
+                    }
+                    
+                    this.upgradesListElement.appendChild(upgradeElement);
+                }
+            }
+
+            startGameLoop() {
+                setInterval(() => {
+                    if (this.moneyPerSecond > 0) {
+                        this.money += this.moneyPerSecond / 10;
+                        this.totalEarned += this.moneyPerSecond / 10;
+                        this.updateDisplay();
+                    }
+                }, 100);
+
+                setInterval(() => {
+                    this.renderUpgrades();
+                    this.updateDisplay();
+                }, 1000);
+            }
+        }
+
+        // Initialize the terminal
+        new TerminalMoneyClicker();
+    </script>
+</body>
+</html>
